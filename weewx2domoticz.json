@@ -1,0 +1,269 @@
+[
+    {
+        "id": "c8ac6b80.a70168",
+        "type": "tab",
+        "label": "WeewxToDomoticz",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "d5754c03.7e2458",
+        "type": "tab",
+        "label": "Mosca MQTT Broker",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "8bef6e26.6ef7e",
+        "type": "mqtt-broker",
+        "z": "",
+        "name": "Localhost",
+        "broker": "localhost",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "compatmode": true,
+        "keepalive": "60",
+        "cleansession": true,
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": ""
+    },
+    {
+        "id": "8ec3c687.1c2cd8",
+        "type": "mqtt-broker",
+        "z": "",
+        "name": "Domopi",
+        "broker": "localhost",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "compatmode": true,
+        "keepalive": "60",
+        "cleansession": true,
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": ""
+    },
+    {
+        "id": "6b5ad5fe.23318c",
+        "type": "mqtt in",
+        "z": "c8ac6b80.a70168",
+        "name": "Weewx",
+        "topic": "weather/loop",
+        "qos": "1",
+        "broker": "8ec3c687.1c2cd8",
+        "x": 85,
+        "y": 68,
+        "wires": [
+            [
+                "cefa2774.c6eb38"
+            ]
+        ],
+        "outputLabels": [
+            "payload"
+        ]
+    },
+    {
+        "id": "8df6165f.727628",
+        "type": "function",
+        "z": "c8ac6b80.a70168",
+        "name": "Temp/Hum/Baro",
+        "func": "/*** Set your Domoticz Sensor IDX here ***/\nvar outTemp_idx = 95;\n/*** END Configuration ****/\n\n\n\nvar weather =msg.payload;\nvar newMsg;\n\n// console.log(weather);\nif ( weather.outTemp_C === undefined || outTemp_idx === null )\n    return null;\n\nvar baro = parseFloat(weather.barometer_mbar).toFixed(2);\nvar humidity = parseFloat(weather.outHumidity).toFixed(1);\nvar temp = parseFloat(weather.outTemp_C).toFixed(1);\nvar battery = parseInt(weather.outTempBatteryStatus);\nvar humstat;\n\nswitch ( battery ) {\n    case 0:\n        battery = 100;\n        break;\n    default:\n        battery = 10;\n        break;\n}\n\nif ( 35 < humidity < 55 )\n    humstat = 1;\nelse if ( 25 <= humidity <= 65 )\n    humstat = 0;\nelse if ( humidity < 25 )\n    humstat = 2;\nelse if (humidity > 65 )\n    humstat = 3;\n    \n//console.log('out Temp = ' + weather.outTemp_C);\n//console.log('Out Humidity = '+  weather.outHumidity);\n//console.log('Barometer = '+  weather.barometer_mbar);\n// Format de sValue = Temp;HUm;Hum_Stat;Bar;Prevision (see https://www.domoticz.com/wiki/MQTT)\nnewMsg = {'command': 'udevice','idx' : outTemp_idx,'battery': battery,'nvalue' : 0, 'svalue':temp+';'+humidity+';'+humstat+';'+baro+';0' };\nvar outTemp = {\"payload\" : newMsg };\nreturn outTemp;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 360,
+        "y": 20,
+        "wires": [
+            [
+                "c251a83f.623aa8"
+            ]
+        ],
+        "outputLabels": [
+            "payload"
+        ]
+    },
+    {
+        "id": "c251a83f.623aa8",
+        "type": "mqtt out",
+        "z": "c8ac6b80.a70168",
+        "name": "Domoticz/In",
+        "topic": "domoticz/in",
+        "qos": "",
+        "retain": "",
+        "broker": "8ec3c687.1c2cd8",
+        "x": 590,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "a4923b2b.8574b8",
+        "type": "function",
+        "z": "c8ac6b80.a70168",
+        "name": "Wind",
+        "func": "/*** Set your Domoticz Sensor IDX here ***/\nvar Wind_idx = 96 ;\n/*** END Configuration ****/\n\n\nvar weather = msg.payload;\nvar newMsg;\n\n// console.log(weather);\nif ( weather.windSpeed_kph === undefined || Wind_idx === null )\n    return null;\n    \nvar windRose;\nvar windDir;\n\nif ( weather.windDir  === undefined ) {\n    windDir = '-';\n    windRose = '-';\n} else {\n    windDir = parseFloat(weather.windDir).toFixed(2);\n\n    if ( windDir < 11.25 || windDir >= 348.25 )\n        windRose = 'N';\n    else if ( windDir >= 11.25 && windDir < 33.75 )\n        windRose = 'NNE';\n    else if ( windDir >= 33.75 && windDir < 56.25 )\n        windRose = 'NE';\n    else if ( windDir >= 56.25 && windDir < 78.75 )\n        windRose = 'ENE';\n    else if ( windDir >= 78.75 && windDir < 101.25 )\n        windRose = 'E';\n    else if ( windDir >= 101.25 && windDir < 123.75 )\n        windRose = 'ESE';\n    else if ( windDir >= 123.75 && windDir < 146.25 )\n        windRose = 'SE';\n    else if ( windDir >= 146.25 && windDir < 168.75 )\n        windRose = 'SSE';\n    else if ( windDir >= 168.75 && windDir < 191.25 )\n        windRose = 'S';\n    else if ( windDir >= 191.25 && windDir < 213.75 )\n        windRose = 'SSO';\n    else if ( windDir >= 213.75 && windDir < 236.25 )\n        windRose = 'SO';\n    else if ( windDir >= 236.25 && windDir < 258.75 )\n        windRose = 'OSO';\n    else if ( windDir >= 258.75 && windDir < 281.25 )\n        windRose = 'O';\n    else if ( windDir >= 281.25 && windDir < 303.75 )\n        windRose = 'ONO';\n    else if ( windDir >= 303.75 && windDir < 326.25 )\n        windRose = 'NO';\n    else if ( windDir >= 326.25 && windDir < 348.75 )\n        windRose = 'NNO';\n}\n\nwindSpeed = parseFloat(weather.windSpeed_kph)*100/36; // 10*WS (m/s)\nwindGust = parseFloat(weather.windGust_kph)*100/36; //10*WG (m/s)\noutTemp = parseFloat(weather.outTemp_C).toFixed(2);\nwindchill = parseFloat(weather.windchill_C).toFixed(2);\n// Format de sValue = WindDir;WindRose;Speed;Gust;Temp;Chill (see https://www.domoticz.com/wiki/Domoticz_API/JSON_URL%27s#Wind)\nnewMsg = {'command': 'udevice','idx' : Wind_idx ,'nvalue' : 0, 'svalue': windDir +';'+windRose+';'+windSpeed.toFixed(2)+';'+windGust.toFixed(2)+';'+outTemp+';'+windchill} ;\nvar windMsg = {\"payload\" : newMsg };\nreturn windMsg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 330,
+        "y": 80,
+        "wires": [
+            [
+                "c251a83f.623aa8"
+            ]
+        ],
+        "outputLabels": [
+            "payload"
+        ]
+    },
+    {
+        "id": "26c11a84.953826",
+        "type": "function",
+        "z": "c8ac6b80.a70168",
+        "name": "Rain",
+        "func": "/*** Set your Domoticz Sensor IDX here ***/\nvar Rain_idx = 97 ;\n/*** END Configuration ****/\n\n\n\n// svalue=RAINRATE;RAINCOUNTER\nvar weather = msg.payload;\nvar newMsg;\n\n// console.log(weather);\nif ( weather.outTemp_C === undefined || Rain_idx === null  )\n    return null;\nhourRain = parseFloat(weather.hourRain_cm) * 10 // en mm * 100 ;\nrainTotal = parseFloat(weather.rainTotal) * 10 // en mm ;\n// Format de sValue = RainRate;RainCounter (see https://www.domoticz.com/wiki/Domoticz_API/JSON_URL%27s#Rain)\nnewMsg = {'command': 'udevice','idx' : Rain_idx ,'nvalue' : 0, 'svalue':hourRain+';'+rainTotal} ;\nvar rainMsg = {\"payload\" : newMsg };\nreturn rainMsg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 330,
+        "y": 140,
+        "wires": [
+            [
+                "c251a83f.623aa8"
+            ]
+        ]
+    },
+    {
+        "id": "6b7beba7.1a4764",
+        "type": "function",
+        "z": "c8ac6b80.a70168",
+        "name": "inTemp",
+        "func": "/*** Set your Domoticz Sensor IDX here ***/\ninTemp_idx = 98 ;\n/*** END Configuration ****/\n\n\n\n\nvar weather = msg.payload;\nvar newMsg;\n\n// console.log(weather);\nif ( weather.inTemp_C === undefined || inTemp_idx === null )\n    return null;\n\nvar humidity = parseFloat(weather.inHumidity).toFixed(1);\nvar temp = parseFloat(weather.inTemp_C).toFixed(1);\n\nvar humstat;\nif ( 35 < humidity && humidity < 55 )\n    humstat = 1;\nelse if ( 25 <= humidity  && humidity <= 65 )\n    humstat = 0;\nelse if ( humidity < 25 )\n    humstat = 2;\nelse if (humidity > 65 )\n    humstat = 3;\n/* HUM_STAT = Humidity status\nHUM_STAT can be one of:\n    0=Normal\n    1=Comfortable\n    2=Dry\n    3=Wet\n*/\n// Format de sValue = Temp;Hum; (see https://www.domoticz.com/wiki/Domoticz_API/JSON_URL%27s#Temperature.2Fhumidity)\nnewMsg = {'command': 'udevice','idx' : inTemp_idx ,'nvalue' : 0, 'svalue':temp+';'+humidity+';'+humstat } ;\nvar inTemp = {\"payload\" : newMsg };\nreturn inTemp;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 340,
+        "y": 200,
+        "wires": [
+            [
+                "c251a83f.623aa8"
+            ]
+        ]
+    },
+    {
+        "id": "aed4075.10ba8f8",
+        "type": "function",
+        "z": "c8ac6b80.a70168",
+        "name": "extraTemp1",
+        "func": "/*** Set your Domoticz Sensor IDX here ***/\nextraTemp1_idx = 99 ;\n/*** END Configuration ****/\n\n\nvar weather = msg.payload;\nvar newMsg;\n\n// console.log(weather);\nif ( weather.extraTemp1_C === undefined || extraTemp1_idx === null )\n    return null;\n\nvar humidity = parseFloat(weather.extraHumid1).toFixed(1);\nvar temp = parseFloat(weather.extraTemp1_C).toFixed(1);\n\nvar humstat;\nif ( 35 < humidity  && humidity  < 55 )\n    humstat = 1;\nelse if ( 25 <= humidity  && humidity  <= 65 )\n    humstat = 0;\nelse if ( humidity < 25 )\n    humstat = 2;\nelse if (humidity > 65 )\n    humstat = 3;\n    \n// Format de sValue = Temp;HUm; (see https://www.domoticz.com/wiki/Domoticz_API/JSON_URL%27s#Temperature.2Fhumidity)\nnewMsg = {'command': 'udevice','idx' : extraTemp1_idx ,'nvalue' : 0, 'svalue':temp+';'+humidity+';'+humstat } ;\nvar extraTempMsg = {\"payload\" : newMsg };\nreturn extraTempMsg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 350,
+        "y": 260,
+        "wires": [
+            [
+                "c251a83f.623aa8"
+            ]
+        ]
+    },
+    {
+        "id": "26cceaf6.b94466",
+        "type": "function",
+        "z": "c8ac6b80.a70168",
+        "name": "extraTemp2",
+        "func": "/*** Set your Domoticz Sensor IDX here ***/\nextraTemp2_idx = null ;\n/*** END Configuration ****/\n\nvar weather = msg.payload;\nvar newMsg;\n\nif ( weather.extraTemp2_C === undefined || extraTemp2_idx === null )\n    return null;\n\nvar humidity = parseFloat(weather.extraHumid2).toFixed(1);\nvar temp = parseFloat(weather.extraTemp2_C).toFixed(1);\n\nvar humstat;\nif ( 35 < humidity && humidity  < 55 )\n    humstat = 1;\nelse if ( 25 <= humidity && humidity  <= 65 )\n    humstat = 0;\nelse if ( humidity < 25 )\n    humstat = 2;\nelse if (humidity > 65 )\n    humstat = 3;\n    \n// Format de sValue = Temp;Hum; (see https://www.domoticz.com/wiki/Domoticz_API/JSON_URL%27s#Temperature.2Fhumidity)\nnewMsg = {'command': 'udevice','idx' : extraTemp2_idx ,'nvalue' : 0, 'svalue':temp+';'+humidity+';'+humstat } ;\nvar extraTempMsg = {\"payload\" : newMsg };\nreturn extraTempMsg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 350,
+        "y": 320,
+        "wires": [
+            [
+                "c251a83f.623aa8"
+            ]
+        ]
+    },
+    {
+        "id": "9cc84103.d45bb",
+        "type": "comment",
+        "z": "c8ac6b80.a70168",
+        "name": "README",
+        "info": "Install Node-Red\n\nInstaller MQTT Broker\n% sudo npm install node-red-contrib-mqtt-broker\n\n\nInstall weewx-mqtt (where weewx is running)\n@see https://github.com/weewx/weewx/wiki/mqtt\n\n",
+        "x": 72,
+        "y": 338,
+        "wires": []
+    },
+    {
+        "id": "cefa2774.c6eb38",
+        "type": "json",
+        "z": "c8ac6b80.a70168",
+        "name": "JSON",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "x": 115,
+        "y": 241,
+        "wires": [
+            [
+                "aed4075.10ba8f8",
+                "8df6165f.727628",
+                "a4923b2b.8574b8",
+                "26c11a84.953826",
+                "6b7beba7.1a4764",
+                "26cceaf6.b94466",
+                "ae8a18eb.7caf78"
+            ]
+        ],
+        "outputLabels": [
+            "payload"
+        ]
+    },
+    {
+        "id": "92e51a3a.aabae8",
+        "type": "debug",
+        "z": "c8ac6b80.a70168",
+        "name": "Debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "x": 359,
+        "y": 511,
+        "wires": []
+    },
+    {
+        "id": "ae8a18eb.7caf78",
+        "type": "function",
+        "z": "c8ac6b80.a70168",
+        "name": "SolarMaxRadiation",
+        "func": "/*** Set your Domoticz Sensor IDX here ***/\nSolarMax_idx = 106 ;\n/*** END Configuration ****/\n\n\nvar weather = msg.payload;\nvar newMsg;\n\n// console.log(weather);\nif ( weather.maxSolarRad === undefined || SolarMax_idx === null )\n    return null;\n\n    \n// Format de sValue =  (see https://www.domoticz.com/wiki/Domoticz_API/JSON_URL%27s#Temperature.2Fhumidity)\nnewMsg = {'command': 'udevice','idx' : SolarMax_idx ,'nvalue' : 0, 'svalue':weather.maxSolarRad+';0' } ;\nvar SolarMaxMsg = {\"payload\" : newMsg };\nreturn SolarMaxMsg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 361,
+        "y": 374,
+        "wires": [
+            [
+                "c251a83f.623aa8"
+            ]
+        ]
+    },
+    {
+        "id": "7409cb0f.57178c",
+        "type": "mosca in",
+        "z": "d5754c03.7e2458",
+        "mqtt_port": 1883,
+        "mqtt_ws_port": "8090",
+        "name": "MQTT Broker",
+        "username": "",
+        "password": "",
+        "dburl": "",
+        "x": 97,
+        "y": 60,
+        "wires": [
+            []
+        ]
+    }
+]
