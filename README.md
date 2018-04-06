@@ -1,7 +1,7 @@
 # NodeRed-Weewx2Domoticz
 NodeRed flow from Weewx to Domoticz
 
-This is flows to convert weewx mqtt messages to Domoticz mqtt messages.
+This (2) flows convert weewx mqtt messages to Domoticz mqtt messages.
 This flows contains the needed MQTT broker (do not need to install separate MQTT broker)
 
 Required :
