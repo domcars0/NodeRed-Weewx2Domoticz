@@ -11,7 +11,7 @@ Required :
 * Domoticz (www.domoticz.com)
 
 * Node-Red (https://nodered.org/)
-* node-red-contrib-mqtt-broker
+* node-red-contrib-aedes  (MQTT Broker nodered, install it with the command: cd ~/.node-red && npm install node-red-contrib-aedes ) 
 
 Use the node-red web interface to import this json file. Then edit each sensor node to set your Domoticz Sensor IDX.
 
